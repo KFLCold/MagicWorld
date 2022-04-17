@@ -1,0 +1,145 @@
+-------------------------------------【 IDO 】---------------------------------------------
+
+1.  joinSwap;       //加入IDO
+
+A. 判断发起者的Token当前可用余额以及对IDO合约的授权额度 必须足够 usdtTokenContract.balanceOf(msg.sender)>=_payUsdtAmount;
+B. 参数公募编号必须为1或2 _swapId==1||_swapId==2;
+[根据不同IDO编号分别判断]
+C. 判断该公募池开关状态 要为开启
+    oneSwapSwitchState==true 或
+    twoSwapSwitchState==true
+
+-------------------------------------【 IDO白名单 】---------------------------------------------
+
+1.  joinSwap;       //加入IDO
+
+A. 判断白名单开关状态  必须为开启  swapSwitchState==true ;
+B. 判断账号地址参与次数 必须是未参与  idoAccounts[msg.sender].totalJoinCount<=0 ;
+C. 判断发起者的Token当前可用余额以及对IDO合约的授权额度 必须足够 usdtTokenContract.balanceOf(msg.sender)>=_payUsdtAmount;
+
+-------------------------------------【 盲盒 】---------------------------------------------
+
+1. openBox;                       //打开盒子
+
+A. 判断发起者加入生态状态  要为生态用户  inviteContract.inviterAddressOf(msg.sender)!=address(0); 邀请人不为黑洞地址
+B. 判断该盲盒开关状态 要为开启   boxSwitchState==true;
+C. 判断发起者的Token余额以及对盲盒合约的授权额度 必须足够 macTokenContract.balanceOf(msg.sender)>=boxOpenPayAmount;
+D. 判断盲盒合约的Token余额 必须足够 magicNftContract .balanceOf(address(this))>0;
+
+-------------------------------------【 商城 】---------------------------------------------
+
+1. joinShop;                      //上架NFT
+
+A. 判断发起者加入生态状态  要为生态用户  inviteContract.inviterAddressOf(msg.sender)!=address(0); 邀请人不为黑洞地址
+B. 判断该商城开关状态 要为开启   convertSwitchState==true;
+C. 判断参与NFT类型 必须是存在类型  _nftType==[ 1 或 2 ] ;
+D. 判断订单出售价必须小于或等于2倍期MAC价值   _convertAmount<=nftValue.mul(2) ;
+E. 类型ID判断=>
+      1 =>  判断发起者的TokenId以及对商城合约的授权额度 必须足够 magicNftContract.ownerOf(_tokenId)==msg.sender  ;
+      2 =>  判断发起者的TokenId以及对商城合约的授权额度 必须足够 platinumNftContract.ownerOf(_tokenId)==msg.sender  ;
+
+2. exitShop;                      //下架NFT
+
+A. 判断订单ID必须是存在，上架中  order.status == 0;  (0 - 上架中 ; 1 - 交易完成 ; 2 - 已下架)
+B. 判断订单账号必须是发起者账号  order.account==msg.sender;
+
+3. convertShop;                   //购买NFT
+
+A. 判断发起者加入生态状态  要为生态用户  inviteContract.inviterAddressOf(msg.sender)!=address(0); 邀请人不为黑洞地址
+B. 判断该商城开关状态 要为开启   convertSwitchState==true;
+C. 判断订单ID必须是生成，已生成  order.index!=0;
+D. 判断订单ID必须是存在，上架中  order.status == 0;  (0 - 上架中 ; 1 - 交易完成 ; 2 - 已下架)
+E. 判断发起者的Token余额以及对商城合约的授权额度 必须足够 macTokenContract.balanceOf(msg.sender)>=order.convertAmount;
+
+-------------------------------------【 挖矿 】---------------------------------------------
+
+1.  joinFarm;                      //加入挖矿
+
+A. 判断发起者加入生态状态  要为生态用户  inviteContract.inviterAddressOf(msg.sender)!=address(0); 邀请人不为黑洞地址
+B. 判断该矿池开关状态 要为开启   farmSwitchState==true;
+C. 判断参与NFT类型 必须是存在类型  _nftType==[ 1 或 2 ] ;
+D. 类型ID判断=>
+      1 =>  判断发起者的TokenId以及对质押合约的授权额度 必须足够 magicNftContract.ownerOf(_tokenId)==msg.sender  ;
+      2 =>  判断发起者的TokenId以及对质押合约的授权额度 必须足够 platinumNftContract.ownerOf(_tokenId)==msg.sender  ;
+E. 嵌套判断=>
+   1. 发起者是否已拥有邀请人 （没有邀请人进入下级判断2）
+            inviterAddress[msg.sender] ==address(0) 或   查询发起者邀请人地址为黑洞地址，则没有邀请人
+   2. 邀请人地址是否为创世根节点地址（不是，则进入下级判断3）
+            _inviterAddress!=genesisAddress
+   3. 判断邀请人地址是否为有效质押用户（不是，则无法参与质押）
+            inviterAddress[msg.sender] !=address(0)      查询邀请人地址不为黑洞地址，即参加过质押，为有效用户
+
+2.  exitFarm;                      //退出挖矿
+
+A. 判断订单ID必须是存在，未赎回  order.isExist == true;
+B. 判断订单账号必须是发起者账号  order.account==msg.sender;
+
+3. claim;                         //提取挖矿收益
+
+A. 当前可领取金额必须大于0(或订单提取状态不为 领取已完成)  profitAmountOf[orderIndex]>0(或order.exitProfitIndex!=2) ;
+
+-------------------------------------【 拍卖 】---------------------------------------------
+
+1. joinAuction;                  //上架拍卖NFT
+
+A. 判断发起者加入生态状态  要为生态用户  inviteContract.inviterAddressOf(msg.sender)!=address(0); 邀请人不为黑洞地址
+B. 判断该拍卖开关状态 要为开启   auctionSwitchState==true;
+C. 判断该拍卖上架时间周期设置 必须在1-30天内  _auctionDay>=1&&_auctionDay<=30 ;
+D. 判断该拍卖NFT起拍价不能超出2倍MAC价值     _auctionAmount<nftValue.mul(2);
+E. 判断参与NFT类型 必须是存在类型  _nftType==[ 1 或 2 ] ;
+F. 类型ID判断=>
+      1 =>  判断发起者的TokenId以及对商城合约的授权额度 必须足够 magicNftContract.ownerOf(_tokenId)==msg.sender  ;
+      2 =>  判断发起者的TokenId以及对商城合约的授权额度 必须足够 platinumNftContract.ownerOf(_tokenId)==msg.sender  ;
+
+2. auctionShop;                   //参与竞价NFT
+
+A. 判断发起者加入生态状态  要为生态用户  inviteContract.inviterAddressOf(msg.sender)!=address(0); 邀请人不为黑洞地址
+B. 判断该拍卖开关状态 要为开启   auctionSwitchState==true;
+C. 判断当前时间必须到达开启时间  order.startTime<=block.timestam ;
+D. 判断订单ID必须是存在，竞拍中  order.status!=2 ;  (0 - 未被竞拍 ; 1 - 已被竞拍 ; 2 - 已退出)
+E. 判断订单参与拍卖价必须大于最后一笔拍卖价格   _auctionAmount>order.lastAmount ;
+F. 判断订单参与拍卖价必须小于或等于2倍MAC价值   _auctionAmount<=order.maxAmount ;
+G. 判断发起者的Token余额以及对拍卖合约的授权额度 必须足够 macTokenContract.balanceOf(msg.sender)>=_auctionAmount ;
+
+3. exitAuction;                   //领取退出NFT
+
+A. 判断订单ID必须是生产，已生成  order.index!=0 ;
+B. 判断订单ID必须是存在，竞拍中  order.status!=2 ;  (0 - 未被竞拍 ; 1 - 已被竞拍 ; 2 - 已退出)
+C. 判断订单账号必须是发起者账号  order.account==msg.sender ;
+D. 判断订单结束时间戳已达到  block.timestamp>=order.endTime ;
+
+-------------------------------------【 合成 】---------------------------------------------
+
+1. joinCompose;                   //加入合成
+
+A. 判断发起者加入生态状态  要为生态用户  inviteContract.inviterAddressOf(msg.sender)!=address(0); 邀请人不为黑洞地址
+B. 判断TokenId为7种不同等级,并都是地址当前所拥有的;
+
+-------------------------------------【 游戏 】---------------------------------------------
+
+1. joinGame;                      //加入游戏[支付100MAC]
+
+A. 判断发起者加入生态状态  要为生态用户  inviteContract.inviterAddressOf(msg.sender)!=address(0); 邀请人不为黑洞地址
+B. 判断该游戏开关状态 要为开启   gameSwitchState==true  ;
+C. 判断发起者必须为首次加入游戏 则原不存在游戏账号  !gameAccountOf(msg.sender)  ;
+D. 判断发起者的Token余额以及对游戏合约的授权额度 必须足够 macTokenContract.balanceOf(msg.sender)>=gameOpenPayAmount ;
+
+2. recharge;                      //充值金币[1=MAC;2=MET]
+
+A. 判断发起者加入生态状态  要为生态用户  inviteContract.inviterAddressOf(msg.sender)!=address(0); 邀请人不为黑洞地址
+B. 判断该游戏开关状态 要为开启   gameSwitchState==true  ;
+C. 判断发起者必须为已经加入游戏 则存在游戏账号  gameAccountOf(msg.sender)  ;
+D. 判断充值金额必须满足最小充值金额   _rechargeAmount>=gameMinPayAmount ; [MAC/MET 最小值一致]
+E. 判断充值类型参数必须为 [coinType=1 或 coinType=2] ;
+F. 类型ID判断=>
+      1 =>  判断发起者的TokenId以及游戏合约的授权额度 必须足够 macTokenContract.balanceOf(msg.sender)>=_rechargeAmount  ;
+      2 =>  判断发起者的TokenId以及游戏合约的授权额度 必须足够 metTokenContract.balanceOf(msg.sender)>=_rechargeAmount  ;
+
+-------------------------------------【 空投 】---------------------------------------------
+
+1. joinAirdrop;                   //领取空投
+
+A. 判断发起者加入生态状态  要为生态用户  inviteContract.inviterAddressOf(msg.sender)!=address(0); 邀请人不为黑洞地址
+B. 判断发起者直推邀请人人数 必须大于5    inviteContract.accountInviterCountOf(msg.sender)>=5  ;
+C. 判断该空投开关状态 要为开启   airdropSwitchState==true  ;
+D. 判断该发起者 领取状态必须为未领取过   airdropAccounts[msg.sender].isJoinAirdrop == false ;
